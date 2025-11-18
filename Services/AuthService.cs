@@ -13,7 +13,7 @@ namespace mkBoutiqueCaftan.Services;
 public interface IAuthService
 {
     Task<LoginResponse> LoginAsync(string login, string password);
-    Task<bool> RegisterAsync(string nomComplet, string login, string password, int idRole, string? telephone);
+    Task<bool> RegisterAsync(string nomComplet, string login, string email, string password, int idRole, string? telephone);
 }
 
 public class AuthService : IAuthService
@@ -76,12 +76,6 @@ public class AuthService : IAuthService
                 .FirstOrDefaultAsync(u => 
                     u.Login.ToLower() == login.ToLower() && 
                     u.Actif);
-_logger.LogWarning("Mot de passe incorrect. Hash utilisé : {Hash}", user.MotDePasseHash);                    
-
- _logger.LogWarning("password: {password}", PasswordHelper.VerifyPassword(password, user.MotDePasseHash));
-
-
-
             // Vérifier le mot de passe   _logger.LogWarning("Mot de passe incorrect. Hash utilisé : {hashOfInput}", hashOfInput); 
             if (user != null && !PasswordHelper.VerifyPassword(password, user.MotDePasseHash))
             {
@@ -120,6 +114,7 @@ _logger.LogWarning("Mot de passe incorrect. Hash utilisé : {Hash}", user.MotDeP
                 IdUtilisateur = user.IdUtilisateur,
                 NomComplet = user.NomComplet,
                 Login = user.Login,
+                Email = user.Email,
                 IdRole = user.IdRole,
                 Telephone = user.Telephone,
                 Actif = user.Actif,
@@ -163,7 +158,7 @@ _logger.LogWarning("Mot de passe incorrect. Hash utilisé : {Hash}", user.MotDeP
         }
     }
 
-    public async Task<bool> RegisterAsync(string nomComplet, string login, string password, int idRole, string? telephone)
+    public async Task<bool> RegisterAsync(string nomComplet, string login, string email, string password, int idRole, string? telephone)
     {
         _logger.LogInformation("Tentative d'inscription pour le login: {Login}", login);
         
@@ -176,6 +171,19 @@ _logger.LogWarning("Mot de passe incorrect. Hash utilisé : {Hash}", user.MotDeP
         {
             _logger.LogWarning("Tentative d'inscription avec un login déjà existant: {Login}", login);
             return false;
+        }
+
+        // Vérifier si l'email existe déjà
+        if (!string.IsNullOrWhiteSpace(email))
+        {
+            var emailExists = await _context.Users
+                .AnyAsync(u => u.Email.ToLower() == email.ToLower());
+
+            if (emailExists)
+            {
+                _logger.LogWarning("Tentative d'inscription avec un email déjà existant: {Email}", email);
+                return false;
+            }
         }
 
         // Vérifier si le rôle existe
@@ -192,6 +200,7 @@ _logger.LogWarning("Mot de passe incorrect. Hash utilisé : {Hash}", user.MotDeP
         {
             NomComplet = nomComplet,
             Login = login,
+            Email = email,
             MotDePasseHash = PasswordHelper.HashPassword(password),
             IdRole = idRole,
             Telephone = telephone,

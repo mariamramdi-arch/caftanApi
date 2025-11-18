@@ -42,18 +42,20 @@ public class AuthController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(request.NomComplet) || 
             string.IsNullOrWhiteSpace(request.Login) || 
+            string.IsNullOrWhiteSpace(request.Email) ||
             string.IsNullOrWhiteSpace(request.Password))
         {
             return BadRequest(new LoginResponse
             {
                 Success = false,
-                Message = "Le nom complet, le login et le mot de passe sont requis"
+                Message = "Le nom complet, le login, l'email et le mot de passe sont requis"
             });
         }
 
         var success = await _authService.RegisterAsync(
             request.NomComplet, 
-            request.Login, 
+            request.Login,
+            request.Email,
             request.Password, 
             request.IdRole, 
             request.Telephone);

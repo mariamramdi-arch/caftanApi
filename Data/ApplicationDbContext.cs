@@ -67,6 +67,11 @@ public class ApplicationDbContext : DbContext
                 .IsRequired()
                 .HasMaxLength(50);
             
+            entity.Property(e => e.Email)
+                .HasColumnName("email")
+                .IsRequired()
+                .HasMaxLength(100);
+            
             entity.Property(e => e.MotDePasseHash)
                 .HasColumnName("mot_de_passe_hash")
                 .IsRequired()
@@ -94,6 +99,11 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.Login)
                 .IsUnique()
                 .HasDatabaseName("IX_Users_Login");
+            
+            // Index unique sur Email
+            entity.HasIndex(e => e.Email)
+                .IsUnique()
+                .HasDatabaseName("IX_Users_Email");
 
             // Relation avec Role
             entity.HasOne(u => u.Role)

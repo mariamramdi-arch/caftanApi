@@ -69,9 +69,10 @@ public class UserController : ControllerBase
         {
             if (string.IsNullOrWhiteSpace(request.NomComplet) ||
                 string.IsNullOrWhiteSpace(request.Login) ||
+                string.IsNullOrWhiteSpace(request.Email) ||
                 string.IsNullOrWhiteSpace(request.Password))
             {
-                return BadRequest(new { message = "Le nom complet, le login et le mot de passe sont requis" });
+                return BadRequest(new { message = "Le nom complet, le login, l'email et le mot de passe sont requis" });
             }
 
             var user = await _userService.CreateUserAsync(request);

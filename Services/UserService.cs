@@ -34,6 +34,7 @@ public class UserService : IUserService
             IdUtilisateur = user.IdUtilisateur,
             NomComplet = user.NomComplet,
             Login = user.Login,
+            Email = user.Email,
             IdRole = user.IdRole,
             Telephone = user.Telephone,
             Actif = user.Actif,
@@ -118,6 +119,19 @@ public class UserService : IUserService
                 return null;
             }
 
+            // Vérifier si l'email existe déjà
+            if (!string.IsNullOrWhiteSpace(request.Email))
+            {
+                var emailExists = await _context.Users
+                    .AnyAsync(u => u.Email.ToLower() == request.Email.ToLower());
+
+                if (emailExists)
+                {
+                    _logger.LogWarning("Tentative de création d'utilisateur avec un email déjà existant: {Email}", request.Email);
+                    return null;
+                }
+            }
+
             // Vérifier si le rôle existe
             var roleExists = await _context.Roles
                 .AnyAsync(r => r.IdRole == request.IdRole && r.Actif);
@@ -132,6 +146,7 @@ public class UserService : IUserService
             {
                 NomComplet = request.NomComplet,
                 Login = request.Login,
+                Email = request.Email,
                 MotDePasseHash = PasswordHelper.HashPassword(request.Password),
                 IdRole = request.IdRole,
                 Telephone = request.Telephone,
@@ -177,6 +192,19 @@ public class UserService : IUserService
                 }
             }
 
+            // Vérifier si l'email existe déjà (sauf pour l'utilisateur actuel)
+            if (!string.IsNullOrWhiteSpace(request.Email) && request.Email.ToLower() != user.Email.ToLower())
+            {
+                var emailExists = await _context.Users
+                    .AnyAsync(u => u.Email.ToLower() == request.Email.ToLower() && u.IdUtilisateur != id);
+
+                if (emailExists)
+                {
+                    _logger.LogWarning("Tentative de mise à jour avec un email déjà existant: {Email}", request.Email);
+                    return null;
+                }
+            }
+
             // Vérifier si le rôle existe (si changé)
             if (request.IdRole.HasValue && request.IdRole.Value != user.IdRole)
             {
@@ -196,6 +224,9 @@ public class UserService : IUserService
 
             if (!string.IsNullOrWhiteSpace(request.Login))
                 user.Login = request.Login;
+
+            if (!string.IsNullOrWhiteSpace(request.Email))
+                user.Email = request.Email;
 
             if (request.IdRole.HasValue)
                 user.IdRole = request.IdRole.Value;
