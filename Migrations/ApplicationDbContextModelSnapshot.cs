@@ -79,6 +79,12 @@ namespace mkBoutiqueCaftan.Migrations
                         .HasColumnName("date_creation_compte")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("email");
+
                     b.Property<int>("IdRole")
                         .HasColumnType("int")
                         .HasColumnName("id_role");
@@ -107,6 +113,10 @@ namespace mkBoutiqueCaftan.Migrations
                         .HasColumnName("telephone");
 
                     b.HasKey("IdUtilisateur");
+
+                    b.HasIndex("Email")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Users_Email");
 
                     b.HasIndex("IdRole");
 

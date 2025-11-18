@@ -12,6 +12,7 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<User> Users { get; set; }
     public DbSet<Role> Roles { get; set; }
+    public DbSet<Taille> Tailles { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -110,6 +111,27 @@ public class ApplicationDbContext : DbContext
                 .WithMany(r => r.Users)
                 .HasForeignKey(u => u.IdRole)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configuration de l'entité Taille
+        modelBuilder.Entity<Taille>(entity =>
+        {
+            entity.ToTable("Tailles");
+            entity.HasKey(e => e.IdTaille);
+            
+            entity.Property(e => e.IdTaille)
+                .HasColumnName("id_taille")
+                .ValueGeneratedOnAdd();
+            
+            entity.Property(e => e.Libelle)
+                .HasColumnName("taille")
+                .IsRequired()
+                .HasMaxLength(20);
+
+            // Index unique sur Libelle
+            entity.HasIndex(e => e.Libelle)
+                .IsUnique()
+                .HasDatabaseName("IX_Tailles_Taille");
         });
     }
 }
