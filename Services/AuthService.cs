@@ -75,8 +75,18 @@ public class AuthService : IAuthService
             var user = await _context.Users
                 .FirstOrDefaultAsync(u => 
                     u.Login.ToLower() == login.ToLower() && 
-                    u.MotDePasseHash == password &&
                     u.Actif);
+_logger.LogWarning("Mot de passe incorrect. Hash utilisé : {Hash}", user.MotDePasseHash);                    
+
+ _logger.LogWarning("password: {password}", PasswordHelper.VerifyPassword(password, user.MotDePasseHash));
+
+
+
+            // Vérifier le mot de passe   _logger.LogWarning("Mot de passe incorrect. Hash utilisé : {hashOfInput}", hashOfInput); 
+            if (user != null && !PasswordHelper.VerifyPassword(password, user.MotDePasseHash))
+            {
+                user = null;
+            }
 
             if (user == null)
             {
@@ -182,7 +192,7 @@ public class AuthService : IAuthService
         {
             NomComplet = nomComplet,
             Login = login,
-            MotDePasseHash = password, // TODO: Hasher le mot de passe avec BCrypt ou similaire
+            MotDePasseHash = PasswordHelper.HashPassword(password),
             IdRole = idRole,
             Telephone = telephone,
             Actif = true,

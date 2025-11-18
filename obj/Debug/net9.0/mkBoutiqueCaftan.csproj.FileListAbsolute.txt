@@ -123,3 +123,4 @@ C:\Users\Lenovo PC\Documents\mkBoutiquePro\mkBoutiqueCaftan\mkBoutiqueCaftanApi\
 C:\Users\Lenovo PC\Documents\mkBoutiquePro\mkBoutiqueCaftan\mkBoutiqueCaftanApi\bin\Debug\net9.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
 C:\Users\Lenovo PC\Documents\mkBoutiquePro\mkBoutiqueCaftan\mkBoutiqueCaftanApi\bin\Debug\net9.0\Microsoft.IdentityModel.Tokens.dll
 C:\Users\Lenovo PC\Documents\mkBoutiquePro\mkBoutiqueCaftan\mkBoutiqueCaftanApi\bin\Debug\net9.0\System.IdentityModel.Tokens.Jwt.dll
+C:\Users\Lenovo PC\Documents\mkBoutiquePro\mkBoutiqueCaftan\mkBoutiqueCaftanApi\obj\Debug\net9.0\mkBoutiqueCaftan.sourcelink.json

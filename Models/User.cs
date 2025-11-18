@@ -58,3 +58,27 @@ public class RegisterRequest
     public string? Telephone { get; set; }
 }
 
+public class CreateUserRequest
+{
+    public string NomComplet { get; set; } = string.Empty;
+    public string Login { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+    public int IdRole { get; set; }
+    public string? Telephone { get; set; }
+    public bool Actif { get; set; } = true;
+}
+
+public class UpdateUserRequest
+{
+    public string? NomComplet { get; set; }
+    public string? Login { get; set; }
+    public int? IdRole { get; set; }
+    public string? Telephone { get; set; }
+    public bool? Actif { get; set; }
+}
+
+public class ChangePasswordRequest
+{
+    public string NewPassword { get; set; } = string.Empty;
+}
+
