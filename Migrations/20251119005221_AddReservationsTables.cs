@@ -56,23 +56,32 @@ namespace mkBoutiqueCaftan.Migrations
                 {
                     id_client = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    nom_complet = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
+                    nom_client = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    prenom_client = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    telephone = table.Column<string>(type: "varchar(20)", maxLength: 20, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     email = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    telephone = table.Column<string>(type: "varchar(20)", maxLength: 20, nullable: true)
+                    adresse_principale = table.Column<string>(type: "TEXT", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    adresse = table.Column<string>(type: "TEXT", nullable: true)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    total_commandes = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
+                    date_creation_fiche = table.Column<DateTime>(type: "datetime(6)", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
                     id_societe = table.Column<int>(type: "int", nullable: false),
-                    actif = table.Column<bool>(type: "tinyint(1)", nullable: false, defaultValue: true),
-                    date_creation = table.Column<DateTime>(type: "datetime(6)", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
+                    actif = table.Column<bool>(type: "tinyint(1)", nullable: false, defaultValue: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Clients", x => x.id_client);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Clients_Telephone_Societe",
+                table: "Clients",
+                columns: new[] { "telephone", "id_societe" },
+                unique: true);
 
             migrationBuilder.CreateTable(
                 name: "Reservations",

@@ -259,13 +259,15 @@ public class ReservationService : IReservationService
             Client = reservation.Client != null ? new ClientDto
             {
                 IdClient = reservation.Client.IdClient,
-                NomComplet = reservation.Client.NomComplet,
-                Email = reservation.Client.Email,
+                NomClient = reservation.Client.NomClient,
+                PrenomClient = reservation.Client.PrenomClient,
                 Telephone = reservation.Client.Telephone,
-                Adresse = reservation.Client.Adresse,
+                Email = reservation.Client.Email,
+                AdressePrincipale = reservation.Client.AdressePrincipale,
+                TotalCommandes = reservation.Client.TotalCommandes,
+                DateCreationFiche = reservation.Client.DateCreationFiche,
                 IdSociete = reservation.Client.IdSociete,
-                Actif = reservation.Client.Actif,
-                DateCreation = reservation.Client.DateCreation
+                Actif = reservation.Client.Actif
             } : null,
             Paiement = reservation.Paiement != null ? new PaiementDto
             {

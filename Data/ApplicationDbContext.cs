@@ -259,22 +259,38 @@ public class ApplicationDbContext : DbContext
                 .HasColumnName("id_client")
                 .ValueGeneratedOnAdd();
             
-            entity.Property(e => e.NomComplet)
-                .HasColumnName("nom_complet")
+            entity.Property(e => e.NomClient)
+                .HasColumnName("nom_client")
                 .IsRequired()
                 .HasMaxLength(100);
+            
+            entity.Property(e => e.PrenomClient)
+                .HasColumnName("prenom_client")
+                .IsRequired()
+                .HasMaxLength(100);
+            
+            entity.Property(e => e.Telephone)
+                .HasColumnName("telephone")
+                .IsRequired()
+                .HasMaxLength(20);
             
             entity.Property(e => e.Email)
                 .HasColumnName("email")
                 .HasMaxLength(100);
             
-            entity.Property(e => e.Telephone)
-                .HasColumnName("telephone")
-                .HasMaxLength(20);
-            
-            entity.Property(e => e.Adresse)
-                .HasColumnName("adresse")
+            entity.Property(e => e.AdressePrincipale)
+                .HasColumnName("adresse_principale")
                 .HasColumnType("TEXT");
+            
+            entity.Property(e => e.TotalCommandes)
+                .HasColumnName("total_commandes")
+                .IsRequired()
+                .HasDefaultValue(0);
+            
+            entity.Property(e => e.DateCreationFiche)
+                .HasColumnName("date_creation_fiche")
+                .IsRequired()
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
             
             entity.Property(e => e.IdSociete)
                 .HasColumnName("id_societe")
@@ -284,11 +300,11 @@ public class ApplicationDbContext : DbContext
                 .HasColumnName("actif")
                 .IsRequired()
                 .HasDefaultValue(true);
-            
-            entity.Property(e => e.DateCreation)
-                .HasColumnName("date_creation")
-                .IsRequired()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            // Index unique sur Telephone et IdSociete (même téléphone peut exister pour différentes sociétés)
+            entity.HasIndex(e => new { e.Telephone, e.IdSociete })
+                .IsUnique()
+                .HasDatabaseName("IX_Clients_Telephone_Societe");
         });
 
         // Configuration de l'entité Paiement
