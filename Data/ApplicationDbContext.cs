@@ -23,6 +23,23 @@ public class ApplicationDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        
+        // Supprimer toutes les clés étrangères automatiques vers Societe après la configuration de base
+        // pour éviter que EF Core crée automatiquement des relations basées sur IdSociete
+        var entityTypes = modelBuilder.Model.GetEntityTypes()
+            .Where(e => e.ClrType != typeof(Societe))
+            .ToList();
+        
+        foreach (var entityType in entityTypes)
+        {
+            var foreignKeys = entityType.GetForeignKeys()
+                .Where(fk => fk.PrincipalEntityType.ClrType == typeof(Societe))
+                .ToList();
+            foreach (var fk in foreignKeys)
+            {
+                entityType.RemoveForeignKey(fk);
+            }
+        }
 
         // Configuration de l'entité Societe
         modelBuilder.Entity<Societe>(entity =>
@@ -117,6 +134,9 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => new { e.NomRole, e.IdSociete })
                 .IsUnique()
                 .HasDatabaseName("IX_Roles_NomRole_Societe");
+            
+            // Empêcher EF Core de créer automatiquement une relation vers Societe
+            entity.Ignore("Societe");
         });
 
         // Configuration de l'entité User
@@ -186,6 +206,14 @@ public class ApplicationDbContext : DbContext
                 .WithMany(r => r.Users)
                 .HasForeignKey(u => u.IdRole)
                 .OnDelete(DeleteBehavior.Restrict);
+            
+            // Empêcher EF Core de créer automatiquement une relation vers Societe
+            entity.Ignore("Societe");
+            
+            // Empêcher EF Core de créer automatiquement une relation vers Societe
+            // IdSociete est une simple colonne, pas une clé étrangère
+            entity.Property(e => e.IdSociete)
+                .HasAnnotation("Relational:ColumnType", "int");
         });
 
         // Configuration de l'entité Taille
@@ -211,6 +239,9 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => new { e.Libelle, e.IdSociete })
                 .IsUnique()
                 .HasDatabaseName("IX_Tailles_Taille_Societe");
+            
+            // Empêcher EF Core de créer automatiquement une relation vers Societe
+            entity.Ignore("Societe");
         });
 
         // Configuration de l'entité Categorie
@@ -243,6 +274,11 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => new { e.NomCategorie, e.IdSociete })
                 .IsUnique()
                 .HasDatabaseName("IX_Categories_NomCategorie_Societe");
+            
+            // Empêcher EF Core de créer automatiquement une relation vers Societe
+            entity.Ignore("Societe");
+            entity.Property(e => e.IdSociete)
+                .HasAnnotation("Relational:ColumnType", "int");
         });
 
         // Configuration de l'entité Article
@@ -309,6 +345,9 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(a => a.IdCategorie)
                 .OnDelete(DeleteBehavior.Restrict);
+            
+            // Empêcher EF Core de créer automatiquement une relation vers Societe
+            entity.Ignore("Societe");
         });
 
         // Configuration de l'entité Client
@@ -367,6 +406,9 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => new { e.Telephone, e.IdSociete })
                 .IsUnique()
                 .HasDatabaseName("IX_Clients_Telephone_Societe");
+            
+            // Empêcher EF Core de créer automatiquement une relation vers Societe
+            entity.Ignore("Societe");
         });
 
         // Configuration de l'entité Paiement
@@ -410,6 +452,9 @@ public class ApplicationDbContext : DbContext
                 .WithOne(r => r.Paiement)
                 .HasForeignKey<Paiement>(p => p.IdReservation)
                 .OnDelete(DeleteBehavior.Restrict);
+            
+            // Empêcher EF Core de créer automatiquement une relation vers Societe
+            entity.Ignore("Societe");
         });
 
         // Configuration de l'entité Reservation
@@ -476,6 +521,9 @@ public class ApplicationDbContext : DbContext
                 .WithOne(p => p.Reservation)
                 .HasForeignKey<Reservation>(r => r.IdPaiement)
                 .OnDelete(DeleteBehavior.SetNull);
+            
+            // Empêcher EF Core de créer automatiquement une relation vers Societe
+            entity.Ignore("Societe");
         });
     }
 }
