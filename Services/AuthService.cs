@@ -13,7 +13,7 @@ namespace mkBoutiqueCaftan.Services;
 public interface IAuthService
 {
     Task<LoginResponse> LoginAsync(string login, string password);
-    Task<bool> RegisterAsync(string nomComplet, string login, string email, string password, int idRole, string? telephone);
+    Task<bool> RegisterAsync(string nomComplet, string login, string email, string password, int idRole, int idSociete, string? telephone);
 }
 
 public class AuthService : IAuthService
@@ -116,6 +116,7 @@ public class AuthService : IAuthService
                 Login = user.Login,
                 Email = user.Email,
                 IdRole = user.IdRole,
+                IdSociete = user.IdSociete,
                 Telephone = user.Telephone,
                 Actif = user.Actif,
                 DateCreationCompte = user.DateCreationCompte,
@@ -125,6 +126,7 @@ public class AuthService : IAuthService
                     IdRole = role.IdRole,
                     NomRole = role.NomRole,
                     Description = role.Description,
+                    IdSociete = role.IdSociete,
                     Actif = role.Actif
                 } : null
             };
@@ -158,14 +160,14 @@ public class AuthService : IAuthService
         }
     }
 
-    public async Task<bool> RegisterAsync(string nomComplet, string login, string email, string password, int idRole, string? telephone)
+    public async Task<bool> RegisterAsync(string nomComplet, string login, string email, string password, int idRole, int idSociete, string? telephone)
     {
         _logger.LogInformation("Tentative d'inscription pour le login: {Login}", login);
         
-        // Vérifier si le login existe déjà
+        // Vérifier si le login existe déjà pour cette société
         var exists = await _context.Users
             .AnyAsync(u => 
-                u.Login.ToLower() == login.ToLower());
+                u.Login.ToLower() == login.ToLower() && u.IdSociete == idSociete);
 
         if (exists)
         {
@@ -173,11 +175,11 @@ public class AuthService : IAuthService
             return false;
         }
 
-        // Vérifier si l'email existe déjà
+        // Vérifier si l'email existe déjà pour cette société
         if (!string.IsNullOrWhiteSpace(email))
         {
             var emailExists = await _context.Users
-                .AnyAsync(u => u.Email.ToLower() == email.ToLower());
+                .AnyAsync(u => u.Email.ToLower() == email.ToLower() && u.IdSociete == idSociete);
 
             if (emailExists)
             {
@@ -203,6 +205,7 @@ public class AuthService : IAuthService
             Email = email,
             MotDePasseHash = PasswordHelper.HashPassword(password),
             IdRole = idRole,
+            IdSociete = idSociete,
             Telephone = telephone,
             Actif = true,
             DateCreationCompte = DateTime.Now

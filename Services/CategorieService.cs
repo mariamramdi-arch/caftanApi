@@ -42,20 +42,21 @@ public class CategorieService : ICategorieService
 
     public async Task<CategorieDto> CreateCategorieAsync(CreateCategorieRequest request)
     {
-        // Vérifier si une catégorie avec le même nom existe déjà
+        // Vérifier si une catégorie avec le même nom existe déjà pour cette société
         var existingCategorie = await _context.Categories
-            .FirstOrDefaultAsync(c => c.NomCategorie.ToLower() == request.NomCategorie.ToLower());
+            .FirstOrDefaultAsync(c => c.NomCategorie.ToLower() == request.NomCategorie.ToLower() && c.IdSociete == request.IdSociete);
         
         if (existingCategorie != null)
         {
-            throw new InvalidOperationException($"Une catégorie avec le nom '{request.NomCategorie}' existe déjà.");
+            throw new InvalidOperationException($"Une catégorie avec le nom '{request.NomCategorie}' existe déjà pour cette société.");
         }
 
         var categorie = new Categorie
         {
             NomCategorie = request.NomCategorie,
             Description = request.Description,
-            OrdreAffichage = request.OrdreAffichage
+            OrdreAffichage = request.OrdreAffichage,
+            IdSociete = request.IdSociete
         };
 
         _context.Categories.Add(categorie);
@@ -73,18 +74,23 @@ public class CategorieService : ICategorieService
             return null;
         }
 
-        // Vérifier si une autre catégorie avec le même nom existe déjà
+        // Vérifier si une autre catégorie avec le même nom existe déjà pour cette société
         var existingCategorie = await _context.Categories
-            .FirstOrDefaultAsync(c => c.NomCategorie.ToLower() == request.NomCategorie.ToLower() && c.IdCategorie != id);
+            .FirstOrDefaultAsync(c => c.NomCategorie.ToLower() == request.NomCategorie.ToLower() && c.IdCategorie != id && c.IdSociete == (request.IdSociete ?? categorie.IdSociete));
         
         if (existingCategorie != null)
         {
-            throw new InvalidOperationException($"Une catégorie avec le nom '{request.NomCategorie}' existe déjà.");
+            throw new InvalidOperationException($"Une catégorie avec le nom '{request.NomCategorie}' existe déjà pour cette société.");
         }
 
         categorie.NomCategorie = request.NomCategorie;
         categorie.Description = request.Description;
         categorie.OrdreAffichage = request.OrdreAffichage;
+        
+        if (request.IdSociete.HasValue)
+        {
+            categorie.IdSociete = request.IdSociete.Value;
+        }
         
         await _context.SaveChangesAsync();
 
@@ -114,7 +120,8 @@ public class CategorieService : ICategorieService
             IdCategorie = categorie.IdCategorie,
             NomCategorie = categorie.NomCategorie,
             Description = categorie.Description,
-            OrdreAffichage = categorie.OrdreAffichage
+            OrdreAffichage = categorie.OrdreAffichage,
+            IdSociete = categorie.IdSociete
         };
     }
 }

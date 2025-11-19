@@ -36,6 +36,7 @@ public class UserService : IUserService
             Login = user.Login,
             Email = user.Email,
             IdRole = user.IdRole,
+            IdSociete = user.IdSociete,
             Telephone = user.Telephone,
             Actif = user.Actif,
             DateCreationCompte = user.DateCreationCompte,
@@ -44,6 +45,7 @@ public class UserService : IUserService
                 IdRole = role.IdRole,
                 NomRole = role.NomRole,
                 Description = role.Description,
+                IdSociete = role.IdSociete,
                 Actif = role.Actif
             } : null
         };
@@ -109,9 +111,9 @@ public class UserService : IUserService
     {
         try
         {
-            // Vérifier si le login existe déjà
+            // Vérifier si le login existe déjà pour cette société
             var loginExists = await _context.Users
-                .AnyAsync(u => u.Login.ToLower() == request.Login.ToLower());
+                .AnyAsync(u => u.Login.ToLower() == request.Login.ToLower() && u.IdSociete == request.IdSociete);
 
             if (loginExists)
             {
@@ -119,11 +121,11 @@ public class UserService : IUserService
                 return null;
             }
 
-            // Vérifier si l'email existe déjà
+            // Vérifier si l'email existe déjà pour cette société
             if (!string.IsNullOrWhiteSpace(request.Email))
             {
                 var emailExists = await _context.Users
-                    .AnyAsync(u => u.Email.ToLower() == request.Email.ToLower());
+                    .AnyAsync(u => u.Email.ToLower() == request.Email.ToLower() && u.IdSociete == request.IdSociete);
 
                 if (emailExists)
                 {
@@ -149,6 +151,7 @@ public class UserService : IUserService
                 Email = request.Email,
                 MotDePasseHash = PasswordHelper.HashPassword(request.Password),
                 IdRole = request.IdRole,
+                IdSociete = request.IdSociete,
                 Telephone = request.Telephone,
                 Actif = request.Actif,
                 DateCreationCompte = DateTime.Now
@@ -179,11 +182,11 @@ public class UserService : IUserService
                 return null;
             }
 
-            // Vérifier si le login existe déjà (sauf pour l'utilisateur actuel)
+            // Vérifier si le login existe déjà pour cette société (sauf pour l'utilisateur actuel)
             if (!string.IsNullOrWhiteSpace(request.Login) && request.Login.ToLower() != user.Login.ToLower())
             {
                 var loginExists = await _context.Users
-                    .AnyAsync(u => u.Login.ToLower() == request.Login.ToLower() && u.IdUtilisateur != id);
+                    .AnyAsync(u => u.Login.ToLower() == request.Login.ToLower() && u.IdUtilisateur != id && u.IdSociete == (request.IdSociete ?? user.IdSociete));
 
                 if (loginExists)
                 {
@@ -192,11 +195,11 @@ public class UserService : IUserService
                 }
             }
 
-            // Vérifier si l'email existe déjà (sauf pour l'utilisateur actuel)
+            // Vérifier si l'email existe déjà pour cette société (sauf pour l'utilisateur actuel)
             if (!string.IsNullOrWhiteSpace(request.Email) && request.Email.ToLower() != user.Email.ToLower())
             {
                 var emailExists = await _context.Users
-                    .AnyAsync(u => u.Email.ToLower() == request.Email.ToLower() && u.IdUtilisateur != id);
+                    .AnyAsync(u => u.Email.ToLower() == request.Email.ToLower() && u.IdUtilisateur != id && u.IdSociete == (request.IdSociete ?? user.IdSociete));
 
                 if (emailExists)
                 {
@@ -230,6 +233,9 @@ public class UserService : IUserService
 
             if (request.IdRole.HasValue)
                 user.IdRole = request.IdRole.Value;
+
+            if (request.IdSociete.HasValue)
+                user.IdSociete = request.IdSociete.Value;
 
             if (request.Telephone != null)
                 user.Telephone = request.Telephone;

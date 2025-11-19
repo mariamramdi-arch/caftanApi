@@ -41,18 +41,19 @@ public class TailleService : ITailleService
 
     public async Task<TailleDto> CreateTailleAsync(CreateTailleRequest request)
     {
-        // Vérifier si une taille avec le même libellé existe déjà
+        // Vérifier si une taille avec le même libellé existe déjà pour cette société
         var existingTaille = await _context.Tailles
-            .FirstOrDefaultAsync(t => t.Libelle.ToLower() == request.Taille.ToLower());
+            .FirstOrDefaultAsync(t => t.Libelle.ToLower() == request.Taille.ToLower() && t.IdSociete == request.IdSociete);
         
         if (existingTaille != null)
         {
-            throw new InvalidOperationException($"Une taille avec le libellé '{request.Taille}' existe déjà.");
+            throw new InvalidOperationException($"Une taille avec le libellé '{request.Taille}' existe déjà pour cette société.");
         }
 
         var taille = new Taille
         {
-            Libelle = request.Taille
+            Libelle = request.Taille,
+            IdSociete = request.IdSociete
         };
 
         _context.Tailles.Add(taille);
@@ -70,16 +71,21 @@ public class TailleService : ITailleService
             return null;
         }
 
-        // Vérifier si une autre taille avec le même libellé existe déjà
+        // Vérifier si une autre taille avec le même libellé existe déjà pour cette société
         var existingTaille = await _context.Tailles
-            .FirstOrDefaultAsync(t => t.Libelle.ToLower() == request.Taille.ToLower() && t.IdTaille != id);
+            .FirstOrDefaultAsync(t => t.Libelle.ToLower() == request.Taille.ToLower() && t.IdTaille != id && t.IdSociete == (request.IdSociete ?? taille.IdSociete));
         
         if (existingTaille != null)
         {
-            throw new InvalidOperationException($"Une taille avec le libellé '{request.Taille}' existe déjà.");
+            throw new InvalidOperationException($"Une taille avec le libellé '{request.Taille}' existe déjà pour cette société.");
         }
 
         taille.Libelle = request.Taille;
+        
+        if (request.IdSociete.HasValue)
+        {
+            taille.IdSociete = request.IdSociete.Value;
+        }
         await _context.SaveChangesAsync();
 
         _logger.LogInformation("Taille mise à jour: {Taille} (ID: {IdTaille})", taille.Libelle, taille.IdTaille);
@@ -106,7 +112,8 @@ public class TailleService : ITailleService
         return new TailleDto
         {
             IdTaille = taille.IdTaille,
-            Taille = taille.Libelle
+            Taille = taille.Libelle,
+            IdSociete = taille.IdSociete
         };
     }
 }

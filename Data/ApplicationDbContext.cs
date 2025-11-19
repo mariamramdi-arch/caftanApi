@@ -38,15 +38,19 @@ public class ApplicationDbContext : DbContext
                 .HasColumnName("description")
                 .HasMaxLength(255);
             
+            entity.Property(e => e.IdSociete)
+                .HasColumnName("id_societe")
+                .IsRequired();
+            
             entity.Property(e => e.Actif)
                 .HasColumnName("actif")
                 .IsRequired()
                 .HasDefaultValue(true);
 
-            // Index unique sur NomRole
-            entity.HasIndex(e => e.NomRole)
+            // Index unique sur NomRole et IdSociete (même nom de rôle peut exister pour différentes sociétés)
+            entity.HasIndex(e => new { e.NomRole, e.IdSociete })
                 .IsUnique()
-                .HasDatabaseName("IX_Roles_NomRole");
+                .HasDatabaseName("IX_Roles_NomRole_Societe");
         });
 
         // Configuration de l'entité User
@@ -83,6 +87,10 @@ public class ApplicationDbContext : DbContext
                 .HasColumnName("id_role")
                 .IsRequired();
             
+            entity.Property(e => e.IdSociete)
+                .HasColumnName("id_societe")
+                .IsRequired();
+            
             entity.Property(e => e.Telephone)
                 .HasColumnName("telephone")
                 .HasMaxLength(20);
@@ -97,15 +105,15 @@ public class ApplicationDbContext : DbContext
                 .IsRequired()
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-            // Index unique sur Login
-            entity.HasIndex(e => e.Login)
+            // Index unique sur Login et IdSociete (même login peut exister pour différentes sociétés)
+            entity.HasIndex(e => new { e.Login, e.IdSociete })
                 .IsUnique()
-                .HasDatabaseName("IX_Users_Login");
+                .HasDatabaseName("IX_Users_Login_Societe");
             
-            // Index unique sur Email
-            entity.HasIndex(e => e.Email)
+            // Index unique sur Email et IdSociete (même email peut exister pour différentes sociétés)
+            entity.HasIndex(e => new { e.Email, e.IdSociete })
                 .IsUnique()
-                .HasDatabaseName("IX_Users_Email");
+                .HasDatabaseName("IX_Users_Email_Societe");
 
             // Relation avec Role
             entity.HasOne(u => u.Role)
@@ -128,11 +136,15 @@ public class ApplicationDbContext : DbContext
                 .HasColumnName("taille")
                 .IsRequired()
                 .HasMaxLength(20);
+            
+            entity.Property(e => e.IdSociete)
+                .HasColumnName("id_societe")
+                .IsRequired();
 
-            // Index unique sur Libelle
-            entity.HasIndex(e => e.Libelle)
+            // Index unique sur Libelle et IdSociete (même taille peut exister pour différentes sociétés)
+            entity.HasIndex(e => new { e.Libelle, e.IdSociete })
                 .IsUnique()
-                .HasDatabaseName("IX_Tailles_Taille");
+                .HasDatabaseName("IX_Tailles_Taille_Societe");
         });
 
         // Configuration de l'entité Categorie
@@ -156,11 +168,15 @@ public class ApplicationDbContext : DbContext
             
             entity.Property(e => e.OrdreAffichage)
                 .HasColumnName("ordre_affichage");
+            
+            entity.Property(e => e.IdSociete)
+                .HasColumnName("id_societe")
+                .IsRequired();
 
-            // Index unique sur NomCategorie
-            entity.HasIndex(e => e.NomCategorie)
+            // Index unique sur NomCategorie et IdSociete (même nom peut exister pour différentes sociétés)
+            entity.HasIndex(e => new { e.NomCategorie, e.IdSociete })
                 .IsUnique()
-                .HasDatabaseName("IX_Categories_NomCategorie");
+                .HasDatabaseName("IX_Categories_NomCategorie_Societe");
         });
     }
 }

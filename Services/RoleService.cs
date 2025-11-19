@@ -92,19 +92,20 @@ public class RoleService : IRoleService
 
     public async Task<RoleDto> CreateRoleAsync(CreateRoleRequest request)
     {
-        // Vérifier si un rôle avec le même nom existe déjà
+        // Vérifier si un rôle avec le même nom existe déjà pour cette société
         var existingRole = await _context.Roles
-            .FirstOrDefaultAsync(r => r.NomRole.ToLower() == request.NomRole.ToLower());
+            .FirstOrDefaultAsync(r => r.NomRole.ToLower() == request.NomRole.ToLower() && r.IdSociete == request.IdSociete);
         
         if (existingRole != null)
         {
-            throw new InvalidOperationException($"Un rôle avec le nom '{request.NomRole}' existe déjà.");
+            throw new InvalidOperationException($"Un rôle avec le nom '{request.NomRole}' existe déjà pour cette société.");
         }
 
         var role = new Role
         {
             NomRole = request.NomRole,
             Description = request.Description,
+            IdSociete = request.IdSociete,
             Actif = request.Actif
         };
 
@@ -122,17 +123,22 @@ public class RoleService : IRoleService
             return null;
         }
 
-        // Vérifier si un autre rôle avec le même nom existe déjà
+        // Vérifier si un autre rôle avec le même nom existe déjà pour cette société
         var existingRole = await _context.Roles
-            .FirstOrDefaultAsync(r => r.NomRole.ToLower() == request.NomRole.ToLower() && r.IdRole != id);
+            .FirstOrDefaultAsync(r => r.NomRole.ToLower() == request.NomRole.ToLower() && r.IdRole != id && r.IdSociete == (request.IdSociete ?? role.IdSociete));
         
         if (existingRole != null)
         {
-            throw new InvalidOperationException($"Un rôle avec le nom '{request.NomRole}' existe déjà.");
+            throw new InvalidOperationException($"Un rôle avec le nom '{request.NomRole}' existe déjà pour cette société.");
         }
 
         role.NomRole = request.NomRole;
         role.Description = request.Description;
+        
+        if (request.IdSociete.HasValue)
+        {
+            role.IdSociete = request.IdSociete.Value;
+        }
         
         if (request.Actif.HasValue)
         {
@@ -205,6 +211,7 @@ public class RoleService : IRoleService
             IdRole = role.IdRole,
             NomRole = role.NomRole,
             Description = role.Description,
+            IdSociete = role.IdSociete,
             Actif = role.Actif
         };
     }
