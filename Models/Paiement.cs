@@ -25,3 +25,18 @@ public class PaiementDto
     public int IdSociete { get; set; }
 }
 
+public class CreatePaiementRequest
+{
+    public int IdReservation { get; set; }
+    public decimal Montant { get; set; }
+    public string? MethodePaiement { get; set; }
+    public string? Reference { get; set; }
+}
+
+public class UpdatePaiementRequest
+{
+    public int? IdReservation { get; set; }
+    public decimal? Montant { get; set; }
+    public string? MethodePaiement { get; set; }
+    public string? Reference { get; set; }
+}

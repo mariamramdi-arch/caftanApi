@@ -6,7 +6,7 @@ namespace mkBoutiqueCaftan.Services;
 
 public interface IClientService
 {
-    Task<IEnumerable<ClientDto>> GetAllClientsAsync(int? idSociete = null, bool includeInactive = false);
+    Task<IEnumerable<ClientDto>> GetAllClientsAsync(bool includeInactive = false);
     Task<ClientDto?> GetClientByIdAsync(int id);
     Task<ClientDto> CreateClientAsync(CreateClientRequest request);
     Task<ClientDto?> UpdateClientAsync(int id, UpdateClientRequest request);
@@ -28,10 +28,9 @@ public class ClientService : IClientService
         _userContextService = userContextService;
     }
 
-    public async Task<IEnumerable<ClientDto>> GetAllClientsAsync(int? idSociete = null, bool includeInactive = false)
+    public async Task<IEnumerable<ClientDto>> GetAllClientsAsync(bool includeInactive = false)
     {
-        // Utiliser IdSociete du token si non fourni
-        var currentIdSociete = idSociete ?? _userContextService.GetIdSociete();
+        var currentIdSociete = _userContextService.GetIdSociete();
         if (!currentIdSociete.HasValue)
         {
             throw new UnauthorizedAccessException("IdSociete non trouvé dans le token. Veuillez vous reconnecter.");

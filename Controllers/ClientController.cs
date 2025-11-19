@@ -23,14 +23,16 @@ public class ClientController : ControllerBase
     /// Récupère tous les clients
     /// </summary>
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ClientDto>>> GetAllClients(
-        [FromQuery] int? idSociete = null,
-        [FromQuery] bool includeInactive = false)
+    public async Task<ActionResult<IEnumerable<ClientDto>>> GetAllClients([FromQuery] bool includeInactive = false)
     {
         try
         {
-            var clients = await _clientService.GetAllClientsAsync(idSociete, includeInactive);
+            var clients = await _clientService.GetAllClientsAsync(includeInactive);
             return Ok(clients);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -53,6 +55,10 @@ public class ClientController : ControllerBase
                 return NotFound(new { message = $"Client avec l'ID {id} introuvable" });
             }
             return Ok(client);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -112,6 +118,10 @@ public class ClientController : ControllerBase
             var client = await _clientService.CreateClientAsync(request);
             return CreatedAtAction(nameof(GetClientById), new { id = client.IdClient }, client);
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
         catch (InvalidOperationException ex)
         {
             return Conflict(new { message = ex.Message });
@@ -168,6 +178,10 @@ public class ClientController : ControllerBase
             }
             return Ok(client);
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
         catch (InvalidOperationException ex)
         {
             return Conflict(new { message = ex.Message });
@@ -193,6 +207,10 @@ public class ClientController : ControllerBase
                 return NotFound(new { message = $"Client avec l'ID {id} introuvable" });
             }
             return Ok(new { message = "Client supprimé avec succès" });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
@@ -222,6 +240,10 @@ public class ClientController : ControllerBase
             var client = await _clientService.GetClientByIdAsync(id);
             return Ok(client);
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erreur lors du changement de statut du client {ClientId}", id);
@@ -245,6 +267,10 @@ public class ClientController : ControllerBase
             
             var client = await _clientService.GetClientByIdAsync(id);
             return Ok(client);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
         }
         catch (Exception ex)
         {
