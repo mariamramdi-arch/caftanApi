@@ -18,24 +18,28 @@ public class ReservationService : IReservationService
 {
     private readonly ApplicationDbContext _context;
     private readonly ILogger<ReservationService> _logger;
+    private readonly IUserContextService _userContextService;
 
-    public ReservationService(ApplicationDbContext context, ILogger<ReservationService> logger)
+    public ReservationService(ApplicationDbContext context, ILogger<ReservationService> logger, IUserContextService userContextService)
     {
         _context = context;
         _logger = logger;
+        _userContextService = userContextService;
     }
 
     public async Task<IEnumerable<ReservationDto>> GetAllReservationsAsync(int? idSociete = null, StatutReservation? statut = null)
     {
+        var currentIdSociete = _userContextService.GetIdSociete();
+        if (!currentIdSociete.HasValue)
+        {
+            throw new UnauthorizedAccessException("IdSociete non trouvé dans le token. Veuillez vous reconnecter.");
+        }
+
         var query = _context.Reservations
             .Include(r => r.Client)
             .Include(r => r.Paiement)
+            .Where(r => r.IdSociete == currentIdSociete.Value)
             .AsQueryable();
-
-        if (idSociete.HasValue)
-        {
-            query = query.Where(r => r.IdSociete == idSociete.Value);
-        }
 
         if (statut.HasValue)
         {
