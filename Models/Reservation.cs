@@ -41,7 +41,7 @@ public class ReservationDto
     public int IdSociete { get; set; }
     public ClientDto? Client { get; set; }
     public ArticleDto? Article { get; set; } // Pour compatibilité
-    public List<ArticleDto> Articles { get; set; } = new List<ArticleDto>();
+    public List<ArticleReservationDto> Articles { get; set; } = new List<ArticleReservationDto>();
     public PaiementDto? Paiement { get; set; }
 }
 
@@ -62,6 +62,12 @@ public class ArticleReservationItem
 {
     public int IdArticle { get; set; }
     public int Quantite { get; set; } = 1;
+}
+
+public class ArticleReservationDto
+{
+    public ArticleDto Article { get; set; } = null!;
+    public int Quantite { get; set; }
 }
 
 public class UpdateReservationRequest

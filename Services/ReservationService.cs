@@ -450,21 +450,25 @@ public class ReservationService : IReservationService
             Articles = reservation.ReservationArticles != null && reservation.ReservationArticles.Any()
                 ? reservation.ReservationArticles
                     .Where(ra => ra.Article != null)
-                    .Select(ra => new ArticleDto
+                    .Select(ra => new ArticleReservationDto
                     {
-                        IdArticle = ra.Article.IdArticle,
-                        NomArticle = ra.Article.NomArticle,
-                        Description = ra.Article.Description,
-                        PrixLocationBase = ra.Article.PrixLocationBase,
-                        PrixAvanceBase = ra.Article.PrixAvanceBase,
-                        IdTaille = ra.Article.IdTaille,
-                        Couleur = ra.Article.Couleur,
-                        Photo = ra.Article.Photo,
-                        IdCategorie = ra.Article.IdCategorie,
-                        IdSociete = ra.Article.IdSociete,
-                        Actif = ra.Article.Actif
+                        Article = new ArticleDto
+                        {
+                            IdArticle = ra.Article.IdArticle,
+                            NomArticle = ra.Article.NomArticle,
+                            Description = ra.Article.Description,
+                            PrixLocationBase = ra.Article.PrixLocationBase,
+                            PrixAvanceBase = ra.Article.PrixAvanceBase,
+                            IdTaille = ra.Article.IdTaille,
+                            Couleur = ra.Article.Couleur,
+                            Photo = ra.Article.Photo,
+                            IdCategorie = ra.Article.IdCategorie,
+                            IdSociete = ra.Article.IdSociete,
+                            Actif = ra.Article.Actif
+                        },
+                        Quantite = ra.Quantite
                     }).ToList()
-                : new List<ArticleDto>(),
+                : new List<ArticleReservationDto>(),
             Paiement = reservation.Paiement != null ? new PaiementDto
             {
                 IdPaiement = reservation.Paiement.IdPaiement,
