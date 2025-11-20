@@ -19,16 +19,26 @@ public class ClientService : IClientService
 {
     private readonly ApplicationDbContext _context;
     private readonly ILogger<ClientService> _logger;
+    private readonly IUserContextService _userContextService;
 
-    public ClientService(ApplicationDbContext context, ILogger<ClientService> logger)
+    public ClientService(ApplicationDbContext context, ILogger<ClientService> logger, IUserContextService userContextService)
     {
         _context = context;
         _logger = logger;
+        _userContextService = userContextService;
     }
 
     public async Task<IEnumerable<ClientDto>> GetAllClientsAsync(bool includeInactive = false)
     {
-        var query = _context.Clients.AsQueryable();
+        var idSociete = _userContextService.GetIdSociete();
+        if (!idSociete.HasValue)
+        {
+            _logger.LogWarning("Tentative de récupération des clients sans IdSociete dans le token");
+            return new List<ClientDto>();
+        }
+
+        var query = _context.Clients
+            .Where(c => c.IdSociete == idSociete.Value);
 
         if (!includeInactive)
         {
@@ -45,32 +55,62 @@ public class ClientService : IClientService
 
     public async Task<ClientDto?> GetClientByIdAsync(int id)
     {
+        var idSociete = _userContextService.GetIdSociete();
+        if (!idSociete.HasValue)
+        {
+            _logger.LogWarning("Tentative de récupération d'un client sans IdSociete dans le token");
+            return null;
+        }
+
         var client = await _context.Clients
-            .FirstOrDefaultAsync(c => c.IdClient == id);
-        return client == null ? null : MapToDto(client);
+            .FirstOrDefaultAsync(c => c.IdClient == id && c.IdSociete == idSociete.Value);
+        
+        if (client == null)
+        {
+            return null;
+        }
+
+        return MapToDto(client);
     }
 
     public async Task<ClientDto> CreateClientAsync(CreateClientRequest request)
     {
-        // Vérifier si le téléphone existe déjà
+        var idSociete = _userContextService.GetIdSociete();
+        if (!idSociete.HasValue)
+        {
+            _logger.LogWarning("Tentative de création de client sans IdSociete dans le token");
+            throw new UnauthorizedAccessException("IdSociete manquant dans le token");
+        }
+
+        // Vérifier si le téléphone existe déjà pour cette société
         var telephoneExists = await _context.Clients
-            .AnyAsync(c => c.Telephone == request.Telephone);
+            .AnyAsync(c => c.Telephone == request.Telephone && c.IdSociete == idSociete.Value);
         
         if (telephoneExists)
         {
             throw new InvalidOperationException($"Un client avec le téléphone '{request.Telephone}' existe déjà.");
         }
 
-        // Vérifier si l'email existe déjà (si fourni)
+        // Vérifier si l'email existe déjà (si fourni) pour cette société
         if (!string.IsNullOrWhiteSpace(request.Email))
         {
             var emailExists = await _context.Clients
-                .AnyAsync(c => c.Email != null && c.Email.ToLower() == request.Email.ToLower());
+                .AnyAsync(c => c.Email != null && c.Email.ToLower() == request.Email.ToLower() && c.IdSociete == idSociete.Value);
             
             if (emailExists)
             {
                 throw new InvalidOperationException($"Un client avec l'email '{request.Email}' existe déjà.");
             }
+        }
+
+        // Vérifier si la société existe
+        var societeExists = await _context.Societes
+            .AnyAsync(s => s.IdSociete == idSociete.Value && s.Actif);
+
+        if (!societeExists)
+        {
+            _logger.LogWarning("Tentative de création de client avec une société inexistante ou inactive: {SocieteId}", idSociete.Value);
+            throw new InvalidOperationException("Société invalide");
         }
 
         var client = new Client
@@ -80,6 +120,7 @@ public class ClientService : IClientService
             Telephone = request.Telephone,
             Email = request.Email,
             AdressePrincipale = request.AdressePrincipale,
+            IdSociete = idSociete.Value,
             TotalCommandes = 0,
             DateCreationFiche = DateTime.Now,
             Actif = request.Actif
@@ -94,18 +135,25 @@ public class ClientService : IClientService
 
     public async Task<ClientDto?> UpdateClientAsync(int id, UpdateClientRequest request)
     {
+        var idSociete = _userContextService.GetIdSociete();
+        if (!idSociete.HasValue)
+        {
+            _logger.LogWarning("Tentative de mise à jour de client sans IdSociete dans le token");
+            return null;
+        }
+
         var client = await _context.Clients
-            .FirstOrDefaultAsync(c => c.IdClient == id);
+            .FirstOrDefaultAsync(c => c.IdClient == id && c.IdSociete == idSociete.Value);
         if (client == null)
         {
             return null;
         }
 
-        // Vérifier si le téléphone existe déjà (si fourni)
+        // Vérifier si le téléphone existe déjà (si fourni) pour cette société
         if (!string.IsNullOrWhiteSpace(request.Telephone))
         {
             var telephoneExists = await _context.Clients
-                .AnyAsync(c => c.Telephone == request.Telephone && c.IdClient != id);
+                .AnyAsync(c => c.Telephone == request.Telephone && c.IdClient != id && c.IdSociete == idSociete.Value);
             
             if (telephoneExists)
             {
@@ -113,11 +161,11 @@ public class ClientService : IClientService
             }
         }
 
-        // Vérifier si l'email existe déjà (si fourni)
+        // Vérifier si l'email existe déjà (si fourni) pour cette société
         if (!string.IsNullOrWhiteSpace(request.Email))
         {
             var emailExists = await _context.Clients
-                .AnyAsync(c => c.Email != null && c.Email.ToLower() == request.Email.ToLower() && c.IdClient != id);
+                .AnyAsync(c => c.Email != null && c.Email.ToLower() == request.Email.ToLower() && c.IdClient != id && c.IdSociete == idSociete.Value);
             
             if (emailExists)
             {
@@ -155,8 +203,15 @@ public class ClientService : IClientService
 
     public async Task<bool> DeleteClientAsync(int id)
     {
+        var idSociete = _userContextService.GetIdSociete();
+        if (!idSociete.HasValue)
+        {
+            _logger.LogWarning("Tentative de suppression de client sans IdSociete dans le token");
+            return false;
+        }
+
         var client = await _context.Clients
-            .FirstOrDefaultAsync(c => c.IdClient == id);
+            .FirstOrDefaultAsync(c => c.IdClient == id && c.IdSociete == idSociete.Value);
         if (client == null)
         {
             return false;
@@ -180,8 +235,15 @@ public class ClientService : IClientService
 
     public async Task<bool> ToggleClientStatusAsync(int id)
     {
+        var idSociete = _userContextService.GetIdSociete();
+        if (!idSociete.HasValue)
+        {
+            _logger.LogWarning("Tentative de changement de statut de client sans IdSociete dans le token");
+            return false;
+        }
+
         var client = await _context.Clients
-            .FirstOrDefaultAsync(c => c.IdClient == id);
+            .FirstOrDefaultAsync(c => c.IdClient == id && c.IdSociete == idSociete.Value);
         if (client == null)
         {
             return false;
@@ -196,8 +258,15 @@ public class ClientService : IClientService
 
     public async Task<bool> IncrementTotalCommandesAsync(int id)
     {
+        var idSociete = _userContextService.GetIdSociete();
+        if (!idSociete.HasValue)
+        {
+            _logger.LogWarning("Tentative d'incrémentation du total commandes sans IdSociete dans le token");
+            return false;
+        }
+
         var client = await _context.Clients
-            .FirstOrDefaultAsync(c => c.IdClient == id);
+            .FirstOrDefaultAsync(c => c.IdClient == id && c.IdSociete == idSociete.Value);
         if (client == null)
         {
             return false;
@@ -220,6 +289,7 @@ public class ClientService : IClientService
             Telephone = client.Telephone,
             Email = client.Email,
             AdressePrincipale = client.AdressePrincipale,
+            IdSociete = client.IdSociete,
             TotalCommandes = client.TotalCommandes,
             DateCreationFiche = client.DateCreationFiche,
             Actif = client.Actif

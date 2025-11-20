@@ -8,11 +8,13 @@ public class Client
     public string Telephone { get; set; } = string.Empty;
     public string? Email { get; set; }
     public string? AdressePrincipale { get; set; }
+    public int IdSociete { get; set; }
     public int TotalCommandes { get; set; } = 0;
     public DateTime DateCreationFiche { get; set; } = DateTime.Now;
     public bool Actif { get; set; } = true;
     
     // Navigation properties
+    public Societe? Societe { get; set; }
     public ICollection<Reservation> Reservations { get; set; } = new List<Reservation>();
 }
 
@@ -24,6 +26,7 @@ public class ClientDto
     public string Telephone { get; set; } = string.Empty;
     public string? Email { get; set; }
     public string? AdressePrincipale { get; set; }
+    public int IdSociete { get; set; }
     public int TotalCommandes { get; set; }
     public DateTime DateCreationFiche { get; set; }
     public bool Actif { get; set; }

@@ -334,6 +334,10 @@ public class ApplicationDbContext : DbContext
                 .HasColumnName("adresse_principale")
                 .HasColumnType("TEXT");
             
+            entity.Property(e => e.IdSociete)
+                .HasColumnName("id_societe")
+                .IsRequired();
+            
             entity.Property(e => e.TotalCommandes)
                 .HasColumnName("total_commandes")
                 .IsRequired()
@@ -349,10 +353,20 @@ public class ApplicationDbContext : DbContext
                 .IsRequired()
                 .HasDefaultValue(true);
 
-            // Index unique sur Telephone
-            entity.HasIndex(e => e.Telephone)
+            // Index unique composite sur Telephone et IdSociete
+            entity.HasIndex(e => new { e.Telephone, e.IdSociete })
                 .IsUnique()
-                .HasDatabaseName("IX_Clients_Telephone");
+                .HasDatabaseName("IX_Clients_Telephone_Societe");
+            
+            // Index sur IdSociete
+            entity.HasIndex(e => e.IdSociete)
+                .HasDatabaseName("IX_Clients_id_societe");
+
+            // Relation avec Societe
+            entity.HasOne(c => c.Societe)
+                .WithMany()
+                .HasForeignKey(c => c.IdSociete)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Configuration de l'entité Paiement
