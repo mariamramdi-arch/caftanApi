@@ -58,6 +58,7 @@ public class AuthController : ControllerBase
             request.Email,
             request.Password, 
             request.IdRole,
+            request.IdSociete,
             request.Telephone);
 
         if (!success)

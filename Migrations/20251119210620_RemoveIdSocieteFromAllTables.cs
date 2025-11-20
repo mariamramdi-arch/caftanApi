@@ -18,6 +18,8 @@ namespace mkBoutiqueCaftan.Migrations
                 name: "IX_Users_Login_Societe",
                 table: "Users");
 
+            // Note: On ne supprime PAS id_societe de la table Users car elle est nécessaire
+
             migrationBuilder.DropIndex(
                 name: "IX_Tailles_Taille_Societe",
                 table: "Tailles");
@@ -34,9 +36,10 @@ namespace mkBoutiqueCaftan.Migrations
                 name: "IX_Categories_NomCategorie_Societe",
                 table: "Categories");
 
-            migrationBuilder.DropColumn(
-                name: "id_societe",
-                table: "Users");
+            // Note: On ne supprime PAS id_societe de la table Users
+            // migrationBuilder.DropColumn(
+            //     name: "id_societe",
+            //     table: "Users");
 
             migrationBuilder.DropColumn(
                 name: "id_societe",
@@ -66,16 +69,17 @@ namespace mkBoutiqueCaftan.Migrations
                 name: "id_societe",
                 table: "Articles");
 
+            // Recréer les index composites pour Users avec id_societe
             migrationBuilder.CreateIndex(
-                name: "IX_Users_Email",
+                name: "IX_Users_Email_Societe",
                 table: "Users",
-                column: "email",
+                columns: new[] { "email", "id_societe" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Users_Login",
+                name: "IX_Users_Login_Societe",
                 table: "Users",
-                column: "login",
+                columns: new[] { "login", "id_societe" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -107,11 +111,11 @@ namespace mkBoutiqueCaftan.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropIndex(
-                name: "IX_Users_Email",
+                name: "IX_Users_Email_Societe",
                 table: "Users");
 
             migrationBuilder.DropIndex(
-                name: "IX_Users_Login",
+                name: "IX_Users_Login_Societe",
                 table: "Users");
 
             migrationBuilder.DropIndex(
@@ -130,12 +134,13 @@ namespace mkBoutiqueCaftan.Migrations
                 name: "IX_Categories_NomCategorie",
                 table: "Categories");
 
-            migrationBuilder.AddColumn<int>(
-                name: "id_societe",
-                table: "Users",
-                type: "int",
-                nullable: false,
-                defaultValue: 0);
+            // Note: id_societe n'est pas supprimé de Users dans la migration Up, donc on ne l'ajoute pas ici
+            // migrationBuilder.AddColumn<int>(
+            //     name: "id_societe",
+            //     table: "Users",
+            //     type: "int",
+            //     nullable: false,
+            //     defaultValue: 0);
 
             migrationBuilder.AddColumn<int>(
                 name: "id_societe",
@@ -186,17 +191,8 @@ namespace mkBoutiqueCaftan.Migrations
                 nullable: false,
                 defaultValue: 0);
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Users_Email_Societe",
-                table: "Users",
-                columns: new[] { "email", "id_societe" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Users_Login_Societe",
-                table: "Users",
-                columns: new[] { "login", "id_societe" },
-                unique: true);
+            // Les index composites pour Users sont déjà présents car id_societe n'a pas été supprimé
+            // Pas besoin de les recréer ici
 
             migrationBuilder.CreateIndex(
                 name: "IX_Tailles_Taille_Societe",

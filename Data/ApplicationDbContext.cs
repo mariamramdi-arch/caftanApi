@@ -149,6 +149,10 @@ public class ApplicationDbContext : DbContext
                 .HasColumnName("id_role")
                 .IsRequired();
             
+            entity.Property(e => e.IdSociete)
+                .HasColumnName("id_societe")
+                .IsRequired();
+            
             entity.Property(e => e.Telephone)
                 .HasColumnName("telephone")
                 .HasMaxLength(20);
@@ -163,20 +167,26 @@ public class ApplicationDbContext : DbContext
                 .IsRequired()
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-            // Index unique sur Login
-            entity.HasIndex(e => e.Login)
+            // Index unique sur Login et IdSociete (composite)
+            entity.HasIndex(e => new { e.Login, e.IdSociete })
                 .IsUnique()
-                .HasDatabaseName("IX_Users_Login");
+                .HasDatabaseName("IX_Users_Login_Societe");
             
-            // Index unique sur Email
-            entity.HasIndex(e => e.Email)
+            // Index unique sur Email et IdSociete (composite)
+            entity.HasIndex(e => new { e.Email, e.IdSociete })
                 .IsUnique()
-                .HasDatabaseName("IX_Users_Email");
+                .HasDatabaseName("IX_Users_Email_Societe");
 
             // Relation avec Role
             entity.HasOne(u => u.Role)
                 .WithMany(r => r.Users)
                 .HasForeignKey(u => u.IdRole)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Relation avec Societe
+            entity.HasOne(u => u.Societe)
+                .WithMany()
+                .HasForeignKey(u => u.IdSociete)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

@@ -7,6 +7,7 @@ public interface IUserContextService
 {
     int? GetIdUtilisateur();
     string? GetLogin();
+    int? GetIdSociete();
 }
 
 public class UserContextService : IUserContextService
@@ -52,6 +53,29 @@ public class UserContextService : IUserContextService
 
         return httpContext.User.FindFirst(ClaimTypes.Name)?.Value 
             ?? httpContext.User.FindFirst("Login")?.Value;
+    }
+
+    public int? GetIdSociete()
+    {
+        var httpContext = _httpContextAccessor.HttpContext;
+        if (httpContext?.User?.Identity?.IsAuthenticated != true)
+        {
+            return null;
+        }
+
+        var idSocieteClaim = httpContext.User.FindFirst("IdSociete")?.Value;
+        
+        if (string.IsNullOrEmpty(idSocieteClaim))
+        {
+            return null;
+        }
+
+        if (int.TryParse(idSocieteClaim, out var idSociete))
+        {
+            return idSociete;
+        }
+
+        return null;
     }
 }
 

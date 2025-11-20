@@ -36,6 +36,7 @@ public class UserService : IUserService
             Login = user.Login,
             Email = user.Email,
             IdRole = user.IdRole,
+            IdSociete = user.IdSociete,
             Telephone = user.Telephone,
             Actif = user.Actif,
             DateCreationCompte = user.DateCreationCompte,
@@ -109,9 +110,9 @@ public class UserService : IUserService
     {
         try
         {
-            // Vérifier si le login existe déjà
+            // Vérifier si le login existe déjà pour cette société
             var loginExists = await _context.Users
-                .AnyAsync(u => u.Login.ToLower() == request.Login.ToLower());
+                .AnyAsync(u => u.Login.ToLower() == request.Login.ToLower() && u.IdSociete == request.IdSociete);
 
             if (loginExists)
             {
@@ -119,11 +120,11 @@ public class UserService : IUserService
                 return null;
             }
 
-            // Vérifier si l'email existe déjà
+            // Vérifier si l'email existe déjà pour cette société
             if (!string.IsNullOrWhiteSpace(request.Email))
             {
                 var emailExists = await _context.Users
-                    .AnyAsync(u => u.Email.ToLower() == request.Email.ToLower());
+                    .AnyAsync(u => u.Email.ToLower() == request.Email.ToLower() && u.IdSociete == request.IdSociete);
 
                 if (emailExists)
                 {
@@ -142,6 +143,16 @@ public class UserService : IUserService
                 return null;
             }
 
+            // Vérifier si la société existe
+            var societeExists = await _context.Societes
+                .AnyAsync(s => s.IdSociete == request.IdSociete && s.Actif);
+
+            if (!societeExists)
+            {
+                _logger.LogWarning("Tentative de création d'utilisateur avec une société inexistante ou inactive: {SocieteId}", request.IdSociete);
+                return null;
+            }
+
             var newUser = new User
             {
                 NomComplet = request.NomComplet,
@@ -149,6 +160,7 @@ public class UserService : IUserService
                 Email = request.Email,
                 MotDePasseHash = PasswordHelper.HashPassword(request.Password),
                 IdRole = request.IdRole,
+                IdSociete = request.IdSociete,
                 Telephone = request.Telephone,
                 Actif = request.Actif,
                 DateCreationCompte = DateTime.Now
@@ -182,8 +194,9 @@ public class UserService : IUserService
             // Vérifier si le login existe déjà (sauf pour l'utilisateur actuel)
             if (!string.IsNullOrWhiteSpace(request.Login) && request.Login.ToLower() != user.Login.ToLower())
             {
+                var idSocieteToCheck = request.IdSociete ?? user.IdSociete;
                 var loginExists = await _context.Users
-                    .AnyAsync(u => u.Login.ToLower() == request.Login.ToLower() && u.IdUtilisateur != id);
+                    .AnyAsync(u => u.Login.ToLower() == request.Login.ToLower() && u.IdUtilisateur != id && u.IdSociete == idSocieteToCheck);
 
                 if (loginExists)
                 {
@@ -195,8 +208,9 @@ public class UserService : IUserService
             // Vérifier si l'email existe déjà (sauf pour l'utilisateur actuel)
             if (!string.IsNullOrWhiteSpace(request.Email) && request.Email.ToLower() != user.Email.ToLower())
             {
+                var idSocieteToCheck = request.IdSociete ?? user.IdSociete;
                 var emailExists = await _context.Users
-                    .AnyAsync(u => u.Email.ToLower() == request.Email.ToLower() && u.IdUtilisateur != id);
+                    .AnyAsync(u => u.Email.ToLower() == request.Email.ToLower() && u.IdUtilisateur != id && u.IdSociete == idSocieteToCheck);
 
                 if (emailExists)
                 {
@@ -230,6 +244,20 @@ public class UserService : IUserService
 
             if (request.IdRole.HasValue)
                 user.IdRole = request.IdRole.Value;
+
+            if (request.IdSociete.HasValue)
+            {
+                // Vérifier si la société existe
+                var societeExists = await _context.Societes
+                    .AnyAsync(s => s.IdSociete == request.IdSociete.Value && s.Actif);
+
+                if (!societeExists)
+                {
+                    _logger.LogWarning("Tentative de mise à jour avec une société inexistante ou inactive: {SocieteId}", request.IdSociete.Value);
+                    return null;
+                }
+                user.IdSociete = request.IdSociete.Value;
+            }
 
             if (request.Telephone != null)
                 user.Telephone = request.Telephone;
