@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using mkBoutiqueCaftan.Data;
 
@@ -11,9 +12,11 @@ using mkBoutiqueCaftan.Data;
 namespace mkBoutiqueCaftan.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251120210907_AddIdArticleToReservations")]
+    partial class AddIdArticleToReservations
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -311,29 +314,6 @@ namespace mkBoutiqueCaftan.Migrations
                         .HasDatabaseName("IX_Reservations_id_societe");
 
                     b.ToTable("Reservations", (string)null);
-                });
-
-            modelBuilder.Entity("mkBoutiqueCaftan.Models.ReservationArticle", b =>
-                {
-                    b.Property<int>("IdReservation")
-                        .HasColumnType("int")
-                        .HasColumnName("id_reservation");
-
-                    b.Property<int>("IdArticle")
-                        .HasColumnType("int")
-                        .HasColumnName("id_article");
-
-                    b.Property<int>("Quantite")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1)
-                        .HasColumnName("quantite");
-
-                    b.HasKey("IdReservation", "IdArticle");
-
-                    b.HasIndex("IdArticle");
-
-                    b.ToTable("ReservationArticles", (string)null);
                 });
 
             modelBuilder.Entity("mkBoutiqueCaftan.Models.Role", b =>
@@ -639,25 +619,6 @@ namespace mkBoutiqueCaftan.Migrations
                     b.Navigation("Societe");
                 });
 
-            modelBuilder.Entity("mkBoutiqueCaftan.Models.ReservationArticle", b =>
-                {
-                    b.HasOne("mkBoutiqueCaftan.Models.Article", "Article")
-                        .WithMany()
-                        .HasForeignKey("IdArticle")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("mkBoutiqueCaftan.Models.Reservation", "Reservation")
-                        .WithMany("ReservationArticles")
-                        .HasForeignKey("IdReservation")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Article");
-
-                    b.Navigation("Reservation");
-                });
-
             modelBuilder.Entity("mkBoutiqueCaftan.Models.Taille", b =>
                 {
                     b.HasOne("mkBoutiqueCaftan.Models.Societe", "Societe")
@@ -696,11 +657,6 @@ namespace mkBoutiqueCaftan.Migrations
             modelBuilder.Entity("mkBoutiqueCaftan.Models.Paiement", b =>
                 {
                     b.Navigation("Reservation");
-                });
-
-            modelBuilder.Entity("mkBoutiqueCaftan.Models.Reservation", b =>
-                {
-                    b.Navigation("ReservationArticles");
                 });
 
             modelBuilder.Entity("mkBoutiqueCaftan.Models.Role", b =>

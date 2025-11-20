@@ -19,6 +19,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Client> Clients { get; set; }
     public DbSet<Paiement> Paiements { get; set; }
     public DbSet<Reservation> Reservations { get; set; }
+    public DbSet<ReservationArticle> ReservationArticles { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -521,10 +522,19 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.IdSociete)
                 .HasDatabaseName("IX_Reservations_id_societe");
 
+            entity.Property(e => e.IdArticle)
+                .HasColumnName("id_article");
+
             // Relations
             entity.HasOne(r => r.Client)
                 .WithMany(c => c.Reservations)
                 .HasForeignKey(r => r.IdClient)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Relation avec Article
+            entity.HasOne(r => r.Article)
+                .WithMany()
+                .HasForeignKey(r => r.IdArticle)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Relation avec Societe
@@ -538,6 +548,38 @@ public class ApplicationDbContext : DbContext
                 .WithOne(p => p.Reservation)
                 .HasForeignKey<Reservation>(r => r.IdPaiement)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Configuration de la table de liaison ReservationArticle (Many-to-Many)
+        modelBuilder.Entity<ReservationArticle>(entity =>
+        {
+            entity.ToTable("ReservationArticles");
+            entity.HasKey(ra => new { ra.IdReservation, ra.IdArticle });
+
+            entity.Property(ra => ra.IdReservation)
+                .HasColumnName("id_reservation")
+                .IsRequired();
+
+            entity.Property(ra => ra.IdArticle)
+                .HasColumnName("id_article")
+                .IsRequired();
+
+            entity.Property(ra => ra.Quantite)
+                .HasColumnName("quantite")
+                .IsRequired()
+                .HasDefaultValue(1);
+
+            // Relation avec Reservation
+            entity.HasOne(ra => ra.Reservation)
+                .WithMany(r => r.ReservationArticles)
+                .HasForeignKey(ra => ra.IdReservation)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Relation avec Article
+            entity.HasOne(ra => ra.Article)
+                .WithMany()
+                .HasForeignKey(ra => ra.IdArticle)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

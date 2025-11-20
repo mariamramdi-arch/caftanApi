@@ -38,6 +38,9 @@ public class ReservationService : IReservationService
 
         var query = _context.Reservations
             .Include(r => r.Client)
+            .Include(r => r.Article)
+            .Include(r => r.ReservationArticles)
+                .ThenInclude(ra => ra.Article)
             .Include(r => r.Paiement)
             .Where(r => r.IdSociete == idSocieteFromToken.Value);
 
@@ -64,6 +67,9 @@ public class ReservationService : IReservationService
 
         var reservation = await _context.Reservations
             .Include(r => r.Client)
+            .Include(r => r.Article)
+            .Include(r => r.ReservationArticles)
+                .ThenInclude(ra => ra.Article)
             .Include(r => r.Paiement)
             .FirstOrDefaultAsync(r => r.IdReservation == id && r.IdSociete == idSociete.Value);
         
@@ -100,6 +106,43 @@ public class ReservationService : IReservationService
             }
         }
 
+        // Vérifier si l'article existe (si fourni) pour cette société (ancien champ pour compatibilité)
+        if (request.IdArticle.HasValue)
+        {
+            var article = await _context.Articles
+                .FirstOrDefaultAsync(a => a.IdArticle == request.IdArticle.Value && a.IdSociete == idSociete.Value);
+            
+            if (article == null)
+            {
+                throw new InvalidOperationException($"L'article avec l'ID {request.IdArticle} n'existe pas pour cette société.");
+            }
+        }
+
+        // Valider les articles fournis dans la liste
+        if (request.Articles != null && request.Articles.Any())
+        {
+            var articleIds = request.Articles.Select(a => a.IdArticle).ToList();
+            var articles = await _context.Articles
+                .Where(a => articleIds.Contains(a.IdArticle) && a.IdSociete == idSociete.Value)
+                .ToListAsync();
+
+            if (articles.Count != articleIds.Count)
+            {
+                var foundIds = articles.Select(a => a.IdArticle).ToList();
+                var missingIds = articleIds.Except(foundIds).ToList();
+                throw new InvalidOperationException($"Les articles avec les IDs {string.Join(", ", missingIds)} n'existent pas pour cette société.");
+            }
+
+            // Valider les quantités
+            foreach (var articleItem in request.Articles)
+            {
+                if (articleItem.Quantite <= 0)
+                {
+                    throw new InvalidOperationException($"La quantité pour l'article {articleItem.IdArticle} doit être supérieure à 0.");
+                }
+            }
+        }
+
         // Valider les dates
         if (request.DateDebut >= request.DateFin)
         {
@@ -125,12 +168,27 @@ public class ReservationService : IReservationService
             MontantTotal = request.MontantTotal,
             StatutReservation = request.StatutReservation,
             IdPaiement = request.IdPaiement,
+            IdArticle = request.IdArticle, // Pour compatibilité
             RemiseAppliquee = request.RemiseAppliquee,
             IdSociete = idSociete.Value
         };
 
         _context.Reservations.Add(reservation);
         await _context.SaveChangesAsync();
+
+        // Ajouter les articles à la réservation
+        if (request.Articles != null && request.Articles.Any())
+        {
+            var reservationArticles = request.Articles.Select(a => new ReservationArticle
+            {
+                IdReservation = reservation.IdReservation,
+                IdArticle = a.IdArticle,
+                Quantite = a.Quantite
+            }).ToList();
+
+            _context.ReservationArticles.AddRange(reservationArticles);
+            await _context.SaveChangesAsync();
+        }
 
         _logger.LogInformation("Réservation créée: ID {IdReservation} pour le client {IdClient}", reservation.IdReservation, reservation.IdClient);
 
@@ -149,6 +207,7 @@ public class ReservationService : IReservationService
 
         var reservation = await _context.Reservations
             .Include(r => r.Client)
+            .Include(r => r.Article)
             .Include(r => r.Paiement)
             .FirstOrDefaultAsync(r => r.IdReservation == id && r.IdSociete == idSociete.Value);
         
@@ -178,6 +237,43 @@ public class ReservationService : IReservationService
             if (paiement == null)
             {
                 throw new InvalidOperationException($"Le paiement avec l'ID {request.IdPaiement} n'existe pas pour cette société.");
+            }
+        }
+
+        // Vérifier si l'article existe (si fourni) pour cette société (ancien champ pour compatibilité)
+        if (request.IdArticle.HasValue)
+        {
+            var article = await _context.Articles
+                .FirstOrDefaultAsync(a => a.IdArticle == request.IdArticle.Value && a.IdSociete == idSociete.Value);
+            
+            if (article == null)
+            {
+                throw new InvalidOperationException($"L'article avec l'ID {request.IdArticle} n'existe pas pour cette société.");
+            }
+        }
+
+        // Valider les articles fournis dans la liste
+        if (request.Articles != null && request.Articles.Any())
+        {
+            var articleIds = request.Articles.Select(a => a.IdArticle).ToList();
+            var articles = await _context.Articles
+                .Where(a => articleIds.Contains(a.IdArticle) && a.IdSociete == idSociete.Value)
+                .ToListAsync();
+
+            if (articles.Count != articleIds.Count)
+            {
+                var foundIds = articles.Select(a => a.IdArticle).ToList();
+                var missingIds = articleIds.Except(foundIds).ToList();
+                throw new InvalidOperationException($"Les articles avec les IDs {string.Join(", ", missingIds)} n'existent pas pour cette société.");
+            }
+
+            // Valider les quantités
+            foreach (var articleItem in request.Articles)
+            {
+                if (articleItem.Quantite <= 0)
+                {
+                    throw new InvalidOperationException($"La quantité pour l'article {articleItem.IdArticle} doit être supérieure à 0.");
+                }
             }
         }
 
@@ -216,6 +312,35 @@ public class ReservationService : IReservationService
             reservation.IdPaiement = request.IdPaiement.Value;
         else if (request.IdPaiement == null && request.IdPaiement != reservation.IdPaiement)
             reservation.IdPaiement = null;
+
+        if (request.IdArticle.HasValue)
+            reservation.IdArticle = request.IdArticle.Value;
+        else if (request.IdArticle == null && request.IdArticle != reservation.IdArticle)
+            reservation.IdArticle = null;
+
+        // Mettre à jour les articles si fournis
+        if (request.Articles != null)
+        {
+            // Supprimer les anciens articles de la réservation
+            var existingReservationArticles = await _context.ReservationArticles
+                .Where(ra => ra.IdReservation == id)
+                .ToListAsync();
+            
+            _context.ReservationArticles.RemoveRange(existingReservationArticles);
+
+            // Ajouter les nouveaux articles
+            if (request.Articles.Any())
+            {
+                var reservationArticles = request.Articles.Select(a => new ReservationArticle
+                {
+                    IdReservation = reservation.IdReservation,
+                    IdArticle = a.IdArticle,
+                    Quantite = a.Quantite
+                }).ToList();
+
+                _context.ReservationArticles.AddRange(reservationArticles);
+            }
+        }
 
         if (request.RemiseAppliquee.HasValue)
         {
@@ -292,6 +417,7 @@ public class ReservationService : IReservationService
             MontantTotal = reservation.MontantTotal,
             StatutReservation = reservation.StatutReservation,
             IdPaiement = reservation.IdPaiement,
+            IdArticle = reservation.IdArticle,
             RemiseAppliquee = reservation.RemiseAppliquee,
             IdSociete = reservation.IdSociete,
             Client = reservation.Client != null ? new ClientDto
@@ -307,6 +433,38 @@ public class ReservationService : IReservationService
                 DateCreationFiche = reservation.Client.DateCreationFiche,
                 Actif = reservation.Client.Actif
             } : null,
+            Article = reservation.Article != null ? new ArticleDto
+            {
+                IdArticle = reservation.Article.IdArticle,
+                NomArticle = reservation.Article.NomArticle,
+                Description = reservation.Article.Description,
+                PrixLocationBase = reservation.Article.PrixLocationBase,
+                PrixAvanceBase = reservation.Article.PrixAvanceBase,
+                IdTaille = reservation.Article.IdTaille,
+                Couleur = reservation.Article.Couleur,
+                Photo = reservation.Article.Photo,
+                IdCategorie = reservation.Article.IdCategorie,
+                IdSociete = reservation.Article.IdSociete,
+                Actif = reservation.Article.Actif
+            } : null,
+            Articles = reservation.ReservationArticles != null && reservation.ReservationArticles.Any()
+                ? reservation.ReservationArticles
+                    .Where(ra => ra.Article != null)
+                    .Select(ra => new ArticleDto
+                    {
+                        IdArticle = ra.Article.IdArticle,
+                        NomArticle = ra.Article.NomArticle,
+                        Description = ra.Article.Description,
+                        PrixLocationBase = ra.Article.PrixLocationBase,
+                        PrixAvanceBase = ra.Article.PrixAvanceBase,
+                        IdTaille = ra.Article.IdTaille,
+                        Couleur = ra.Article.Couleur,
+                        Photo = ra.Article.Photo,
+                        IdCategorie = ra.Article.IdCategorie,
+                        IdSociete = ra.Article.IdSociete,
+                        Actif = ra.Article.Actif
+                    }).ToList()
+                : new List<ArticleDto>(),
             Paiement = reservation.Paiement != null ? new PaiementDto
             {
                 IdPaiement = reservation.Paiement.IdPaiement,
