@@ -20,11 +20,13 @@ public class UserService : IUserService
 {
     private readonly ApplicationDbContext _context;
     private readonly ILogger<UserService> _logger;
+    private readonly IUserContextService _userContextService;
 
-    public UserService(ApplicationDbContext context, ILogger<UserService> logger)
+    public UserService(ApplicationDbContext context, ILogger<UserService> logger, IUserContextService userContextService)
     {
         _context = context;
         _logger = logger;
+        _userContextService = userContextService;
     }
 
     private UserDto MapToDto(User user, Role? role = null)
@@ -54,8 +56,15 @@ public class UserService : IUserService
     {
         try
         {
+            var idSociete = _userContextService.GetIdSociete();
+            if (!idSociete.HasValue)
+            {
+                _logger.LogWarning("Tentative de récupération des utilisateurs sans IdSociete dans le token");
+                return new List<UserDto>();
+            }
+
             var users = await _context.Users
-                .Where(u => u.Actif)
+                .Where(u => u.Actif && u.IdSociete == idSociete.Value)
                 .OrderBy(u => u.NomComplet)
                 .ToListAsync();
 
@@ -81,9 +90,24 @@ public class UserService : IUserService
     {
         try
         {
+            var idSociete = _userContextService.GetIdSociete();
+            if (!idSociete.HasValue)
+            {
+                _logger.LogWarning("Tentative de récupération d'utilisateur sans IdSociete dans le token");
+                return null;
+            }
+
             var user = await _context.Users.FindAsync(id);
             if (user == null)
             {
+                return null;
+            }
+
+            // Vérifier que l'utilisateur appartient à la même société
+            if (user.IdSociete != idSociete.Value)
+            {
+                _logger.LogWarning("Tentative d'accès à un utilisateur d'une autre société. UserId: {UserId}, UserSociete: {UserSociete}, CurrentSociete: {CurrentSociete}", 
+                    id, user.IdSociete, idSociete.Value);
                 return null;
             }
 
@@ -110,6 +134,16 @@ public class UserService : IUserService
     {
         try
         {
+            var idSociete = _userContextService.GetIdSociete();
+            if (!idSociete.HasValue)
+            {
+                _logger.LogWarning("Tentative de création d'utilisateur sans IdSociete dans le token");
+                return null;
+            }
+
+            // Forcer l'IdSociete à celui de la société connectée
+            request.IdSociete = idSociete.Value;
+
             // Vérifier si le login existe déjà pour cette société
             var loginExists = await _context.Users
                 .AnyAsync(u => u.Login.ToLower() == request.Login.ToLower() && u.IdSociete == request.IdSociete);
@@ -185,18 +219,35 @@ public class UserService : IUserService
     {
         try
         {
+            var idSociete = _userContextService.GetIdSociete();
+            if (!idSociete.HasValue)
+            {
+                _logger.LogWarning("Tentative de mise à jour d'utilisateur sans IdSociete dans le token");
+                return null;
+            }
+
             var user = await _context.Users.FindAsync(id);
             if (user == null)
             {
                 return null;
             }
 
+            // Vérifier que l'utilisateur appartient à la même société
+            if (user.IdSociete != idSociete.Value)
+            {
+                _logger.LogWarning("Tentative de mise à jour d'un utilisateur d'une autre société. UserId: {UserId}, UserSociete: {UserSociete}, CurrentSociete: {CurrentSociete}", 
+                    id, user.IdSociete, idSociete.Value);
+                return null;
+            }
+
+            // Forcer l'IdSociete à celui de la société connectée (ne pas permettre de changer de société)
+            request.IdSociete = idSociete.Value;
+
             // Vérifier si le login existe déjà (sauf pour l'utilisateur actuel)
             if (!string.IsNullOrWhiteSpace(request.Login) && request.Login.ToLower() != user.Login.ToLower())
             {
-                var idSocieteToCheck = request.IdSociete ?? user.IdSociete;
                 var loginExists = await _context.Users
-                    .AnyAsync(u => u.Login.ToLower() == request.Login.ToLower() && u.IdUtilisateur != id && u.IdSociete == idSocieteToCheck);
+                    .AnyAsync(u => u.Login.ToLower() == request.Login.ToLower() && u.IdUtilisateur != id && u.IdSociete == idSociete.Value);
 
                 if (loginExists)
                 {
@@ -208,9 +259,8 @@ public class UserService : IUserService
             // Vérifier si l'email existe déjà (sauf pour l'utilisateur actuel)
             if (!string.IsNullOrWhiteSpace(request.Email) && request.Email.ToLower() != user.Email.ToLower())
             {
-                var idSocieteToCheck = request.IdSociete ?? user.IdSociete;
                 var emailExists = await _context.Users
-                    .AnyAsync(u => u.Email.ToLower() == request.Email.ToLower() && u.IdUtilisateur != id && u.IdSociete == idSocieteToCheck);
+                    .AnyAsync(u => u.Email.ToLower() == request.Email.ToLower() && u.IdUtilisateur != id && u.IdSociete == idSociete.Value);
 
                 if (emailExists)
                 {
@@ -245,19 +295,8 @@ public class UserService : IUserService
             if (request.IdRole.HasValue)
                 user.IdRole = request.IdRole.Value;
 
-            if (request.IdSociete.HasValue)
-            {
-                // Vérifier si la société existe
-                var societeExists = await _context.Societes
-                    .AnyAsync(s => s.IdSociete == request.IdSociete.Value && s.Actif);
-
-                if (!societeExists)
-                {
-                    _logger.LogWarning("Tentative de mise à jour avec une société inexistante ou inactive: {SocieteId}", request.IdSociete.Value);
-                    return null;
-                }
-                user.IdSociete = request.IdSociete.Value;
-            }
+            // L'IdSociete est déjà forcé à celui de la société connectée, on ne le change pas
+            // user.IdSociete reste inchangé (déjà vérifié plus haut)
 
             if (request.Telephone != null)
                 user.Telephone = request.Telephone;
@@ -283,9 +322,24 @@ public class UserService : IUserService
     {
         try
         {
+            var idSociete = _userContextService.GetIdSociete();
+            if (!idSociete.HasValue)
+            {
+                _logger.LogWarning("Tentative de suppression d'utilisateur sans IdSociete dans le token");
+                return false;
+            }
+
             var user = await _context.Users.FindAsync(id);
             if (user == null)
             {
+                return false;
+            }
+
+            // Vérifier que l'utilisateur appartient à la même société
+            if (user.IdSociete != idSociete.Value)
+            {
+                _logger.LogWarning("Tentative de suppression d'un utilisateur d'une autre société. UserId: {UserId}, UserSociete: {UserSociete}, CurrentSociete: {CurrentSociete}", 
+                    id, user.IdSociete, idSociete.Value);
                 return false;
             }
 
@@ -307,9 +361,24 @@ public class UserService : IUserService
     {
         try
         {
+            var idSociete = _userContextService.GetIdSociete();
+            if (!idSociete.HasValue)
+            {
+                _logger.LogWarning("Tentative de changement de mot de passe sans IdSociete dans le token");
+                return false;
+            }
+
             var user = await _context.Users.FindAsync(id);
             if (user == null)
             {
+                return false;
+            }
+
+            // Vérifier que l'utilisateur appartient à la même société
+            if (user.IdSociete != idSociete.Value)
+            {
+                _logger.LogWarning("Tentative de changement de mot de passe pour un utilisateur d'une autre société. UserId: {UserId}, UserSociete: {UserSociete}, CurrentSociete: {CurrentSociete}", 
+                    id, user.IdSociete, idSociete.Value);
                 return false;
             }
 
@@ -330,9 +399,24 @@ public class UserService : IUserService
     {
         try
         {
+            var idSociete = _userContextService.GetIdSociete();
+            if (!idSociete.HasValue)
+            {
+                _logger.LogWarning("Tentative de changement de statut d'utilisateur sans IdSociete dans le token");
+                return false;
+            }
+
             var user = await _context.Users.FindAsync(id);
             if (user == null)
             {
+                return false;
+            }
+
+            // Vérifier que l'utilisateur appartient à la même société
+            if (user.IdSociete != idSociete.Value)
+            {
+                _logger.LogWarning("Tentative de changement de statut pour un utilisateur d'une autre société. UserId: {UserId}, UserSociete: {UserSociete}, CurrentSociete: {CurrentSociete}", 
+                    id, user.IdSociete, idSociete.Value);
                 return false;
             }
 
