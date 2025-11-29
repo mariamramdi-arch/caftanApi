@@ -518,6 +518,10 @@ public class ApplicationDbContext : DbContext
                 .HasColumnName("id_societe")
                 .IsRequired();
 
+            entity.Property(e => e.PhotoCIN)
+                .HasColumnName("photo_cin")
+                .HasColumnType("LONGTEXT");
+
             // Index sur IdSociete
             entity.HasIndex(e => e.IdSociete)
                 .HasDatabaseName("IX_Reservations_id_societe");

@@ -170,7 +170,8 @@ public class ReservationService : IReservationService
             IdPaiement = request.IdPaiement,
             IdArticle = request.IdArticle, // Pour compatibilité
             RemiseAppliquee = request.RemiseAppliquee,
-            IdSociete = idSociete.Value
+            IdSociete = idSociete.Value,
+            PhotoCIN = request.PhotoCIN
         };
 
         _context.Reservations.Add(reservation);
@@ -351,6 +352,15 @@ public class ReservationService : IReservationService
             reservation.RemiseAppliquee = request.RemiseAppliquee.Value;
         }
 
+        // Mettre à jour PhotoCIN si fourni (peut être une chaîne vide pour supprimer)
+        // Note: Pour les strings nullable, on ne peut pas distinguer "non fourni" de "fourni mais null"
+        // Donc on met à jour uniquement si une valeur est fournie (même si vide)
+        // Pour supprimer, envoyer une chaîne vide "" ou null explicitement
+        if (request.PhotoCIN != null)
+        {
+            reservation.PhotoCIN = string.IsNullOrWhiteSpace(request.PhotoCIN) ? null : request.PhotoCIN;
+        }
+
         await _context.SaveChangesAsync();
 
         _logger.LogInformation("Réservation mise à jour: ID {IdReservation}", reservation.IdReservation);
@@ -420,6 +430,7 @@ public class ReservationService : IReservationService
             IdArticle = reservation.IdArticle,
             RemiseAppliquee = reservation.RemiseAppliquee,
             IdSociete = reservation.IdSociete,
+            PhotoCIN = reservation.PhotoCIN,
             Client = reservation.Client != null ? new ClientDto
             {
                 IdClient = reservation.Client.IdClient,

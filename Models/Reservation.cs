@@ -15,6 +15,7 @@ public class Reservation
     public int? IdArticle { get; set; }
     public decimal RemiseAppliquee { get; set; } = 0.00m;
     public int IdSociete { get; set; }
+    public string? PhotoCIN { get; set; }
     
     // Navigation properties
     public Client? Client { get; set; }
@@ -39,6 +40,7 @@ public class ReservationDto
     public int? IdArticle { get; set; }
     public decimal RemiseAppliquee { get; set; }
     public int IdSociete { get; set; }
+    public string? PhotoCIN { get; set; }
     public ClientDto? Client { get; set; }
     public ArticleDto? Article { get; set; } // Pour compatibilité
     public List<ArticleReservationDto> Articles { get; set; } = new List<ArticleReservationDto>();
@@ -56,6 +58,7 @@ public class CreateReservationRequest
     public int? IdArticle { get; set; } // Pour compatibilité (déprécié, utiliser Articles)
     public List<ArticleReservationItem> Articles { get; set; } = new List<ArticleReservationItem>();
     public decimal RemiseAppliquee { get; set; } = 0.00m;
+    public string? PhotoCIN { get; set; }
 }
 
 public class ArticleReservationItem
@@ -81,5 +84,6 @@ public class UpdateReservationRequest
     public int? IdArticle { get; set; } // Pour compatibilité (déprécié, utiliser Articles)
     public List<ArticleReservationItem>? Articles { get; set; }
     public decimal? RemiseAppliquee { get; set; }
+    public string? PhotoCIN { get; set; }
 }
 
